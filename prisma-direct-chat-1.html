@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Призма — прямой чат</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 20% 0%, #241A30 0%, #15111C 55%, #100C16 100%);
+    font-family: 'Manrope', sans-serif;
+    color: #F3EDE7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .wrap { width: 100%; max-width: 380px; }
+  .brand { text-align: center; margin-bottom: 20px; }
+  .brand .name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 28px; letter-spacing: -0.02em; }
+  .brand .tag { color: #B8ACC4; font-size: 13px; margin-top: 4px; }
+  .card { background: #FAF8F5; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); color: #241A2E; }
+  .pad { padding: 22px 22px 24px; }
+  label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #9A92A0; margin: 16px 0 8px; }
+  label:first-child { margin-top: 0; }
+  input[type=text] {
+    width: 100%; border: none; background: #F0EDE9; border-radius: 9999px;
+    padding: 11px 16px; font-size: 14px; color: #241A2E; font-family: 'Manrope', sans-serif;
+  }
+  input[type=text]:focus { outline: 2px solid #8B5CF6; outline-offset: 1px; }
+  .swatches { display: flex; gap: 10px; }
+  .swatch { width: 32px; height: 32px; border-radius: 9999px; border: 3px solid transparent; cursor: pointer; padding: 0; }
+  .swatch.active { border-color: #241A2E; }
+  .btn {
+    width: 100%; border: none; border-radius: 9999px; padding: 13px 0;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Manrope', sans-serif;
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { color: #fff; }
+  .btn-secondary { background: #F0EDE9; color: #3A3244; }
+  .code-row { display: flex; align-items: center; gap: 8px; }
+  .code-box {
+    flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+    background: #F0EDE9; border-radius: 12px; padding: 10px 12px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; letter-spacing: .01em;
+  }
+  .copy-btn { flex-shrink: 0; border: none; border-radius: 12px; padding: 10px 14px; font-size: 12px; font-weight: 700; cursor: pointer; color: #fff; font-family: 'Manrope', sans-serif; }
+  .hint { font-size: 12px; color: #9A92A0; line-height: 1.5; margin-top: 6px; }
+  .status-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9A92A0; margin-top: 14px; }
+  .dot { width: 7px; height: 7px; border-radius: 9999px; background: #B0A8B8; }
+  .dot.ok { background: #3FCF6E; }
+  .dot.bad { background: #F0537A; }
+  .divider { display: flex; align-items: center; gap: 10px; margin: 20px 0; color: #B0A8B8; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #F0EDE9; }
+
+  /* chat screen */
+  .chat-header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #F0EDE9; }
+  .avatar { width: 34px; height: 34px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+  .chat-header .who { flex: 1; min-width: 0; }
+  .chat-header .who .n { font-weight: 700; font-size: 14px; }
+  .chat-header .who .s { font-size: 11px; color: #9A92A0; }
+  #messages { height: 380px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: #FAF8F5; }
+  .bubble-row { display: flex; }
+  .bubble-row.me { justify-content: flex-end; }
+  .bubble-row.them { justify-content: flex-start; }
+  .bubble { max-width: 78%; padding: 8px 13px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+  .bubble-row.me .bubble { border-bottom-right-radius: 4px; color: #fff; }
+  .bubble-row.them .bubble { border-bottom-left-radius: 4px; background: #fff; color: #241A2E; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .bubble .time { font-size: 10px; opacity: .6; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .composer { display: flex; gap: 8px; align-items: center; padding: 12px; border-top: 1px solid #F0EDE9; }
+  .composer input { flex: 1; }
+  .send-btn { width: 36px; height: 36px; border-radius: 9999px; border: none; color: #fff; font-size: 15px; cursor: pointer; flex-shrink: 0; }
+  .empty { text-align: center; color: #B0A8B8; font-size: 12px; margin-top: 30px; }
+  .foot-note { text-align: center; font-size: 11px; color: #6E6678; margin-top: 14px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="name">Призма</div>
+      <div class="tag">Прямой чат — напрямую между браузерами, без Claude</div>
+    </div>
+    <div id="app" class="card"></div>
+    <div class="foot-note">Соединение идёт через бесплатный публичный сервер PeerJS только для рукопожатия — сами сообщения передаются напрямую между вами.</div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script>
+  const ACCENTS = [
+    { key: "amethyst", name: "Аметист", hex: "#8B5CF6" },
+    { key: "sapphire", name: "Сапфир", hex: "#3E7CFF" },
+    { key: "emerald", name: "Изумруд", hex: "#10B981" },
+    { key: "amber", name: "Янтарь", hex: "#F5A623" },
+    { key: "rose", name: "Роза", hex: "#F0537A" },
+    { key: "coral", name: "Коралл", hex: "#FF7A59" },
+  ];
+
+  const state = {
+    screen: "setup", // setup | chat
+    name: "",
+    accent: ACCENTS[0],
+    myId: "",
+    peer: null,
+    conn: null,
+    connStatus: "init", // init | ready | connecting | connected | closed | error
+    errorMsg: "",
+    peerName: "Собеседник",
+    peerAccentHex: "#8B5CF6",
+  };
+
+  function contrastText(hex) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return lum > 0.6 ? "#241A2E" : "#FFFFFF";
+  }
+  function initials(name) { return (name || "??").trim().slice(0,2).toUpperCase(); }
+  function nowTime() { const d = new Date(); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); }
+  function escapeHtml(s) { const d = document.createElement("div"); d.innerText = s; return d.innerHTML; }
+
+  const app = document.getElementById("app");
+
+  function renderSetup() {
+    const dotClass = state.connStatus === "connecting" ? "" : state.connStatus === "error" ? "bad" : "";
+    const statusText = {
+      init: "Готовим соединение…",
+      ready: "Готово — жди друга или подключись к нему",
+      connecting: "Подключаемся…",
+      error: "Не получилось: " + state.errorMsg,
+    }[state.connStatus] || "";
+
+    app.innerHTML = `
+      <div class="pad">
+        <label>Как тебя зовут</label>
+        <input type="text" id="nameInput" placeholder="Имя" value="${escapeHtml(state.name)}" />
+
+        <label>Твой цвет</label>
+        <div class="swatches" id="swatches">
+          ${ACCENTS.map(a => `<button class="swatch${a.key===state.accent.key?" active":""}" data-key="${a.key}" style="background:${a.hex}" title="${a.name}"></button>`).join("")}
+        </div>
+
+        <div class="divider">Твой код</div>
+        <div class="code-row">
+          <div class="code-box" id="myCodeBox">${state.myId || "генерируется…"}</div>
+          <button class="copy-btn" id="copyBtn" style="background:${state.accent.hex}">Копировать</button>
+        </div>
+        <div class="hint">Отправь этот код другу — он вставит его ниже, чтобы подключиться к тебе.</div>
+
+        <div class="divider">Подключиться к другу</div>
+        <input type="text" id="peerCodeInput" placeholder="Код друга" />
+        <div style="height:10px"></div>
+        <button class="btn btn-primary" id="connectBtn" style="background:${state.accent.hex}" ${!state.myId ? "disabled" : ""}>Подключиться</button>
+
+        <div class="status-line"><span class="dot ${dotClass}"></span><span>${statusText}</span></div>
+      </div>
+    `;
+
+    document.getElementById("nameInput").oninput = (e) => { state.name = e.target.value; };
+    document.getElementById("swatches").querySelectorAll(".swatch").forEach((btn) => {
+      btn.onclick = () => {
+        state.accent = ACCENTS.find((a) => a.key === btn.dataset.key);
+        renderSetup();
+      };
+    });
+    document.getElementById("copyBtn").onclick = () => {
+      if (!state.myId) return;
+      if (navigator.clipboard) navigator.clipboard.writeText(state.myId).catch(() => {});
+      const btn = document.getElementById("copyBtn");
+      btn.textContent = "Скопировано";
+      setTimeout(() => { if (document.getElementById("copyBtn")) document.getElementById("copyBtn").textContent = "Копировать"; }, 1400);
+    };
+    document.getElementById("connectBtn").onclick = () => {
+      const code = document.getElementById("peerCodeInput").value.trim();
+      if (!code) return;
+      state.connStatus = "connecting";
+      renderSetup();
+      const conn = state.peer.connect(code);
+      setupConnection(conn);
+    };
+  }
+
+  function renderChatShell() {
+    state.screen = "chat";
+    app.innerHTML = `
+      <div class="chat-header">
+        <div class="avatar" style="background:${state.peerAccentHex}; color:${contrastText(state.peerAccentHex)}">${initials(state.peerName)}</div>
+        <div class="who">
+          <div class="n">${escapeHtml(state.peerName)}</div>
+          <div class="s" id="chatStatus">на связи</div>
+        </div>
+      </div>
+      <div id="messages"><div class="empty">Пока пусто — напиши первым</div></div>
+      <div class="composer">
+        <input type="text" id="chatInput" placeholder="Написать сообщение…" />
+        <button class="send-btn" id="sendBtn" style="background:${state.accent.hex}">➤</button>
+      </div>
+    `;
+    const input = document.getElementById("chatInput");
+    const send = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      const time = nowTime();
+      state.conn.send({ type: "chat", text, time });
+      appendMessage({ from: "me", text, time });
+      input.value = "";
+    };
+    document.getElementById("sendBtn").onclick = send;
+    input.onkeydown = (e) => { if (e.key === "Enter") send(); };
+    input.focus();
+  }
+
+  function appendMessage(msg) {
+    const box = document.getElementById("messages");
+    if (!box) return;
+    const empty = box.querySelector(".empty");
+    if (empty) empty.remove();
+    const row = document.createElement("div");
+    row.className = "bubble-row " + msg.from;
+    const bubbleColor = msg.from === "me" ? state.accent.hex : "#FFFFFF";
+    const textColor = msg.from === "me" ? contrastText(state.accent.hex) : "#241A2E";
+    row.innerHTML = `<div class="bubble" style="background:${bubbleColor}; color:${textColor}">${escapeHtml(msg.text)}<div class="time">${msg.time}</div></div>`;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateChatStatus(text, isBad) {
+    const el = document.getElementById("chatStatus");
+    if (el) { el.textContent = text; el.style.color = isBad ? "#F0537A" : "#9A92A0"; }
+  }
+
+  function setupConnection(conn) {
+    state.conn = conn;
+    conn.on("open", () => {
+      state.connStatus = "connected";
+      conn.send({ type: "hello", name: state.name || "Гость", accentHex: state.accent.hex });
+      if (state.screen !== "chat") renderChatShell();
+      updateChatStatus("на связи");
+    });
+    conn.on("data", (data) => {
+      if (!data || typeof data !== "object") return;
+      if (data.type === "hello") {
+        state.peerName = data.name || "Собеседник";
+        state.peerAccentHex = data.accentHex || "#8B5CF6";
+        if (state.screen !== "chat") renderChatShell();
+        else {
+          const nameEl = document.querySelector(".chat-header .n");
+          const avatarEl = document.querySelector(".chat-header .avatar");
+          if (nameEl) nameEl.textContent = state.peerName;
+          if (avatarEl) { avatarEl.textContent = initials(state.peerName); avatarEl.style.background = state.peerAccentHex; avatarEl.style.color = contrastText(state.peerAccentHex); }
+        }
+      } else if (data.type === "chat") {
+        appendMessage({ from: "them", text: data.text, time: data.time || nowTime() });
+      }
+    });
+    conn.on("close", () => { state.connStatus = "closed"; updateChatStatus("собеседник отключился", true); });
+    conn.on("error", (err) => { state.connStatus = "error"; state.errorMsg = formatPeerError(err); updateChatStatus("ошибка соединения", true); });
+  }
+
+  function formatPeerError(err) {
+    if (!err) return "неизвестная ошибка";
+    const type = err.type ? err.type + ": " : "";
+    const msg = err.message || String(err);
+    return type + msg;
+  }
+
+  function init() {
+    state.peer = new Peer();
+    state.peer.on("open", (id) => {
+      state.myId = id;
+      state.connStatus = "ready";
+      if (state.screen === "setup") renderSetup();
+    });
+    state.peer.on("connection", (conn) => { setupConnection(conn); });
+    state.peer.on("error", (err) => {
+      state.connStatus = "error";
+      state.errorMsg = formatPeerError(err);
+      if (state.screen === "setup") renderSetup();
+    });
+    renderSetup();
+  }
+
+  if (typeof Peer === "undefined") {
+    app.innerHTML = `
+      <div class="pad">
+        <div style="color:#F0537A; font-weight:700; margin-bottom:8px;">Не загрузилась библиотека для соединения</div>
+        <div class="hint">Проверь интернет-соединение и обнови страницу. Если не поможет — возможно, блокировщик рекламы или файрвол блокирует unpkg.com.</div>
+      </div>
+    `;
+  } else {
+    init();
+  }
+</script>
+</body>
+</html>
